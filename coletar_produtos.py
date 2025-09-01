@@ -1,91 +1,46 @@
-import requests
-from bs4 import BeautifulSoup
-import re
-import csv
-import time
+import json
 import os
+from datetime import datetime
 
-def coletar_produto_aliexpress(url):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
+# Esta é a função que você vai chamar para cada produto
+def salvar_dados_produto(id_produto, nome_produto, preco_venda, custo_produto, taxa_plataforma):
     
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
+    # Calcular o lucro
+    lucro_bruto = preco_venda - custo_produto - taxa_plataforma
 
-        # Nome do produto
-        nome = soup.find('h1', class_='product-title-text').get_text(strip=True) if soup.find('h1', class_='product-title-text') else 'N/A'
-        
-        # Preço
-        preco_element = soup.find('div', class_='price--current--J_tA2Jt')
-        if preco_element:
-            preco_span = preco_element.find('span', class_='price--symbol--H2L3_kK')
-            preco_value = preco_element.find('span', class_='price--amount--E7kL74t')
-            if preco_span and preco_value:
-                preco = preco_span.get_text(strip=True) + preco_value.get_text(strip=True)
-            else:
-                preco = 'N/A'
-        else:
-            preco = 'N/A'
+    # Adicionar um registro de data e hora
+    momento_do_registro = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Descrição (simplificado para o primeiro parágrafo)
-        descricao = 'N/A'
-        descricao_element = soup.find('div', class_='product-detail--content--2u4Ew_B')
-        if descricao_element:
-            paragraphs = descricao_element.find_all('p')
-            if paragraphs:
-                descricao = ' '.join([p.get_text(strip=True) for p in paragraphs])
-
-        # Imagens
-        imagens = []
-        img_elements = soup.find_all('img', class_='image--image--3TfP7m_')
-        for img in img_elements:
-            if 'src' in img.attrs:
-                imagens.append(img['src'])
-
-        return {
-            'nome': nome,
-            'preco': preco,
-            'descricao': descricao,
-            'imagens': ', '.join(imagens)
+    # Criar um dicionário com os dados
+    dados_do_produto = {
+        "id_do_produto": id_produto,
+        "data_registro": momento_do_registro,
+        "nome": nome_produto,
+        "precos": {
+            "preco_venda_shopee": preco_venda,
+            "custo_fornecedor": custo_produto,
+            "taxa_plataforma": taxa_plataforma,
+            "lucro_bruto": lucro_bruto
         }
+    }
+
+    nome_do_arquivo = "dados_dos_produtos.json"
     
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Erro ao acessar a URL {url}: {e}")
-        return None
-    except Exception as e:
-        print(f"❌ Erro ao analisar a página {url}: {e}")
-        return None
+    # Verificar se o arquivo já existe
+    if not os.path.exists(nome_do_arquivo):
+        with open(nome_do_arquivo, 'w', encoding='utf-8') as arquivo_json:
+            json.dump([], arquivo_json) # Cria o arquivo como uma lista vazia
 
-def main():
-    try:
-        with open("links.txt", "r", encoding="utf-8") as f:
-            links = [linha.strip() for linha in f if linha.strip()]
-    except FileNotFoundError:
-        print("❌ Crie um arquivo 'links.txt' com um link do AliExpress por linha.")
-        return
+    # Ler os dados existentes, adicionar os novos e salvar novamente
+    with open(nome_do_arquivo, 'r', encoding='utf-8') as arquivo_json:
+        lista_produtos = json.load(arquivo_json)
 
-    produtos = []
-    for link in links:
-        print(f"🔍 Coletando: {link}")
-        produto = coletar_produto_aliexpress(link)
-        if produto:
-            produtos.append(produto)
-        time.sleep(2)  # evitar bloqueio
+    lista_produtos.append(dados_do_produto)
 
-    if not produtos:
-        print("❌ Nenhum produto coletado.")
-        return
+    with open(nome_do_arquivo, 'w', encoding='utf-8') as arquivo_json:
+        json.dump(lista_produtos, arquivo_json, indent=4, ensure_ascii=False)
 
-    with open("aliexpress_dropshipping.csv", "w", newline="", encoding="utf-8") as csvfile:
-        campos = ["nome", "preco", "descricao", "imagens"]
-        writer = csv.DictWriter(csvfile, fieldnames=campos)
-        writer.writeheader()
-        writer.writerows(produtos)
+    print(f"Dados do produto '{nome_produto}' salvos no arquivo {nome_do_arquivo}")
 
-    print("✅ Arquivo pronto: aliexpress_dropshipping.csv")
-
-if __name__ == "__main__":
-    main()
+# Exemplo de como você chamaria a função no seu script
+# salvar_dados_produto(id_do_seu_produto, nome_do_seu_produto, preco_de_venda, custo_do_produto, taxa)
