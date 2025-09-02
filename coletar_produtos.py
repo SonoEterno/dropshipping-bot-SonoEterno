@@ -1,48 +1,27 @@
-import json
-import os
-from datetime import datetime
+name: Coletar Produtos do AliExpress
 
-# Esta é a função que você vai chamar para cada produto
-def salvar_dados_produto(id_produto, nome_produto, preco_venda, custo_produto, taxa_plataforma):
-    
-    # Calcular o lucro
-    lucro_bruto = preco_venda - custo_produto - taxa_plataforma
+on: [push]
 
-    # Adicionar um registro de data e hora
-    momento_do_registro = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-    # Criar um dicionário com os dados
-    dados_do_produto = {
-        "id_do_produto": id_produto,
-        "data_registro": momento_do_registro,
-        "nome": nome_produto,
-        "precos": {
-            "preco_venda_shopee": preco_venda,
-            "custo_fornecedor": custo_produto,
-            "taxa_plataforma": taxa_plataforma,
-            "lucro_bruto": lucro_bruto
-        }
-    }
+    steps:
+      - uses: actions/checkout@v2
 
-    nome_do_arquivo = "dados_dos_produtos.json"
-    
-    # Verificar se o arquivo já existe
-    if not os.path.exists(nome_do_arquivo):
-        with open(nome_do_arquivo, 'w', encoding='utf-8') as arquivo_json:
-            json.dump([], arquivo_json) # Cria o arquivo como uma lista vazia
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
 
-    # Ler os dados existentes, adicionar os novos e salvar novamente
-    with open(nome_do_arquivo, 'r', encoding='utf-8') as arquivo_json:
-        lista_produtos = json.load(arquivo_json)
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-    lista_produtos.append(dados_do_produto)
+      - name: Run Python script
+        run: python coletar_produtos.py
 
-    with open(nome_do_arquivo, 'w', encoding='utf-8') as arquivo_json:
-        json.dump(lista_produtos, arquivo_json, indent=4, ensure_ascii=False)
-
-    print(f"Dados do produto '{nome_produto}' salvos no arquivo {nome_do_arquivo}")
-
-# Exemplo de como você chamaria a função no seu script
-salvar_dados_produto(id_do_seu_produto, nome_do_seu_produto, preco_de_venda, custo_do_produto, taxa)
-
-print('Automação concluída!')
+      - name: Upload JSON file
+        uses: actions/upload-artifact@v2
+        with:
+          name: dados-coletados
+          path: dados_dos_produtos.json
