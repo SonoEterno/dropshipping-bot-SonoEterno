@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime
+import requests # Adicionado para corrigir o erro
 
 # Esta é a função que você vai chamar para cada produto
 def salvar_dados_produto(id_produto, nome_produto, preco_venda, custo_produto, taxa_plataforma):
@@ -43,4 +44,7 @@ def salvar_dados_produto(id_produto, nome_produto, preco_venda, custo_produto, t
     print(f"Dados do produto '{nome_produto}' salvos no arquivo {nome_do_arquivo}")
 
 # Exemplo de como você chamaria a função no seu script
-# salvar_dados_produto(id_do_seu_produto, nome_do_seu_produto, preco_de_venda, custo_do_produto, taxa)
+# Esta linha abaixo é a que precisa ser ativada, removendo o #
+salvar_dados_produto("ID_EXEMPLO", "Nome do Produto Exemplo", 10.00, 5.00, 1.50)
+
+print('Automação concluída!')
