@@ -1,53 +1,43 @@
-import json
-import os
-from datetime import datetime
+name: Coletar Produtos do AliExpress
 
-ARQUIVO = "dados_dos_produtos.json"
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
-def carregar_produtos():
-    """Carrega produtos do arquivo JSON ou retorna lista vazia."""
-    if not os.path.exists(ARQUIVO):
-        return []
-    with open(ARQUIVO, 'r', encoding='utf-8') as arquivo:
-        return json.load(arquivo)
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
-def salvar_produtos(produtos):
-    """Salva lista de produtos no arquivo JSON."""
-    with open(ARQUIVO, 'w', encoding='utf-8') as arquivo:
-        json.dump(produtos, arquivo, indent=4, ensure_ascii=False)
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-def salvar_dados_produto(id_produto, nome_produto, preco_venda, custo_produto, taxa_plataforma):
-    """Salva dados de um produto no arquivo JSON."""
-    try:
-        preco_venda = float(preco_venda)
-        custo_produto = float(custo_produto)
-        taxa_plataforma = float(taxa_plataforma)
-    except ValueError:
-        print("Erro: Preços e taxas devem ser números.")
-        return
-    
-    lucro_bruto = preco_venda - custo_produto - taxa_plataforma
-    momento = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-    produto = {
-        "id_do_produto": id_produto,
-        "data_registro": momento,
-        "nome": nome_produto,
-        "precos": {
-            "preco_venda_shopee": preco_venda,
-            "custo_fornecedor": custo_produto,
-            "taxa_plataforma": taxa_plataforma,
-            "lucro_bruto": lucro_bruto
-        }
-    }
+      - name: Run Python script
+        run: python coletar_produtos.py
 
-    produtos = carregar_produtos()
-    produtos.append(produto)
-    salvar_produtos(produtos)
+      - name: Commit JSON back to repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add dados_dos_produtos.json
+          git commit -m "Atualiza dados coletados automaticamente" || echo "Sem mudanças para commitar"
+          git push
 
-    print(f"✅ Produto '{nome_produto}' salvo com sucesso!")
-
-# Exemplo de uso
-if __name__ == "__main__":
-    salvar_dados_produto("ID_EXEMPLO", "Produto Exemplo", 10.00, 5.00, 1.50)
-    print("Automação concluída!")
+      - name: Upload JSON file
+        uses: actions/upload-artifact@v4
+        with:
+          name: dados-coletados
+          path: dados_dos_produtos.json
