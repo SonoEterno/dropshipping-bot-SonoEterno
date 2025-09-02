@@ -1,21 +1,37 @@
 import json
 import os
 from datetime import datetime
-import requests # Adicionado para corrigir o erro
 
-# Esta é a função que você vai chamar para cada produto
+ARQUIVO = "dados_dos_produtos.json"
+
+def carregar_produtos():
+    """Carrega produtos do arquivo JSON ou retorna lista vazia."""
+    if not os.path.exists(ARQUIVO):
+        return []
+    with open(ARQUIVO, 'r', encoding='utf-8') as arquivo:
+        return json.load(arquivo)
+
+def salvar_produtos(produtos):
+    """Salva lista de produtos no arquivo JSON."""
+    with open(ARQUIVO, 'w', encoding='utf-8') as arquivo:
+        json.dump(produtos, arquivo, indent=4, ensure_ascii=False)
+
 def salvar_dados_produto(id_produto, nome_produto, preco_venda, custo_produto, taxa_plataforma):
+    """Salva dados de um produto no arquivo JSON."""
+    try:
+        preco_venda = float(preco_venda)
+        custo_produto = float(custo_produto)
+        taxa_plataforma = float(taxa_plataforma)
+    except ValueError:
+        print("Erro: Preços e taxas devem ser números.")
+        return
     
-    # Calcular o lucro
     lucro_bruto = preco_venda - custo_produto - taxa_plataforma
+    momento = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # Adicionar um registro de data e hora
-    momento_do_registro = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    # Criar um dicionário com os dados
-    dados_do_produto = {
+    produto = {
         "id_do_produto": id_produto,
-        "data_registro": momento_do_registro,
+        "data_registro": momento,
         "nome": nome_produto,
         "precos": {
             "preco_venda_shopee": preco_venda,
@@ -25,26 +41,13 @@ def salvar_dados_produto(id_produto, nome_produto, preco_venda, custo_produto, t
         }
     }
 
-    nome_do_arquivo = "dados_dos_produtos.json"
-    
-    # Verificar se o arquivo já existe
-    if not os.path.exists(nome_do_arquivo):
-        with open(nome_do_arquivo, 'w', encoding='utf-8') as arquivo_json:
-            json.dump([], arquivo_json) # Cria o arquivo como uma lista vazia
+    produtos = carregar_produtos()
+    produtos.append(produto)
+    salvar_produtos(produtos)
 
-    # Ler os dados existentes, adicionar os novos e salvar novamente
-    with open(nome_do_arquivo, 'r', encoding='utf-8') as arquivo_json:
-        lista_produtos = json.load(arquivo_json)
+    print(f"✅ Produto '{nome_produto}' salvo com sucesso!")
 
-    lista_produtos.append(dados_do_produto)
-
-    with open(nome_do_arquivo, 'w', encoding='utf-8') as arquivo_json:
-        json.dump(lista_produtos, arquivo_json, indent=4, ensure_ascii=False)
-
-    print(f"Dados do produto '{nome_produto}' salvos no arquivo {nome_do_arquivo}")
-
-# Exemplo de como você chamaria a função no seu script
-# Esta linha abaixo é a que precisa ser ativada, removendo o #
-salvar_dados_produto("ID_EXEMPLO", "Nome do Produto Exemplo", 10.00, 5.00, 1.50)
-
-print('Automação concluída!')
+# Exemplo de uso
+if __name__ == "__main__":
+    salvar_dados_produto("ID_EXEMPLO", "Produto Exemplo", 10.00, 5.00, 1.50)
+    print("Automação concluída!")
