@@ -43,4 +43,6 @@ def salvar_dados_produto(id_produto, nome_produto, preco_venda, custo_produto, t
     print(f"Dados do produto '{nome_produto}' salvos no arquivo {nome_do_arquivo}")
 
 # Exemplo de como você chamaria a função no seu script
-# salvar_dados_produto(id_do_seu_produto, nome_do_seu_produto, preco_de_venda, custo_do_produto, taxa)
+salvar_dados_produto(id_do_seu_produto, nome_do_seu_produto, preco_de_venda, custo_do_produto, taxa)
+
+print('Automação concluída!')
